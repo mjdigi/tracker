@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart Expenses Tracker</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="toast-container"></div>
+
+    <div id="auth-container" class="auth-overlay active">
+        
+        <div id="login-modal" class="auth-box glass-card active">
+            <h2>Welcome Back</h2>
+            <p class="subtitle">Log in to manage your finances</p>
+            
+            <form id="login-form">
+                <div class="input-group">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" id="login-email" placeholder="Email Address" required>
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="login-password" placeholder="Password" required>
+                    <i class="fa-solid fa-eye toggle-password" data-target="login-password"></i>
+                </div>
+                <button type="submit" class="btn-primary w-100" id="login-btn">
+                    <i class="fa-solid fa-right-to-bracket"></i> Login
+                </button>
+            </form>
+
+            <div class="divider"><span>OR</span></div>
+
+            <button class="btn-google" id="google-login-btn">
+                <i class="fa-brands fa-google"></i> Sign in with Google
+            </button>
+
+            <p class="switch-auth">Don't have an account? <span id="show-register">Register here</span></p>
+        </div>
+
+        <div id="register-modal" class="auth-box glass-card">
+            <h2>Create Account</h2>
+            <p class="subtitle">Start tracking your expenses today</p>
+            
+            <form id="register-form">
+                <div class="input-group">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" id="register-name" placeholder="Full Name" required>
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" id="register-email" placeholder="Email Address" required>
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="register-password" placeholder="Password (min 6 chars)" required>
+                    <i class="fa-solid fa-eye toggle-password" data-target="register-password"></i>
+                </div>
+                <button type="submit" class="btn-primary w-100" id="register-btn">
+                    <i class="fa-solid fa-user-plus"></i> Register
+                </button>
+            </form>
+
+            <p class="switch-auth">Already have an account? <span id="show-login">Login here</span></p>
+        </div>
+    </div>
+
+    <div id="app-dashboard" class="dashboard-container hidden">
+        
+        <nav class="glass-nav" id="top-nav">
+            <div class="brand">
+                <i class="fa-solid fa-wallet"></i>
+                <h1>SE Tracker</h1>
+            </div>
+
+            <div class="desktop-tabs">
+                <a href="#" class="tab-item active" data-target="view-home">Home</a>
+                <a href="#" class="tab-item" data-target="view-add">Add</a>
+                <a href="#" class="tab-item" data-target="view-profile">Profile</a>
+            </div>
+
+            <div class="nav-controls">
+                <span id="user-display-name" class="user-badge">User</span>
+                <button id="theme-toggle" class="icon-btn" title="Toggle Dark/Light Mode">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+                </div>
+        </nav>
+
+        <main class="dashboard-main">
+            
+            <div id="view-home" class="view-section active">
+                
+                <div class="filter-bar glass-card mb-24">
+                    <div class="filter-group">
+                        <label for="filter-type" style="font-weight: 500; margin-right: 10px;">Filter By:</label>
+                        <select id="filter-type">
+                            <option value="month" selected>Month</option>
+                            <option value="date">Date</option>
+                            <option value="year">Year</option>
+                        </select>
+                    </div>
+                    
+                    <div id="filter-month-inputs" class="filter-inputs">
+                        <input type="month" id="filter-month-val">
+                    </div>
+
+                    <div id="filter-date-inputs" class="filter-inputs hidden">
+                        <input type="date" id="filter-date-start">
+                        <span style="font-weight: 500; font-size: 0.9rem;">upto</span>
+                        <input type="date" id="filter-date-end">
+                    </div>
+
+                    <div id="filter-year-inputs" class="filter-inputs hidden">
+                        <select id="filter-year-val">
+                            </select>
+                        <select id="filter-year-month-optional">
+                            <option value="">All Months</option>
+                            <option value="0">January</option>
+                            <option value="1">February</option>
+                            <option value="2">March</option>
+                            <option value="3">April</option>
+                            <option value="4">May</option>
+                            <option value="5">June</option>
+                            <option value="6">July</option>
+                            <option value="7">August</option>
+                            <option value="8">September</option>
+                            <option value="9">October</option>
+                            <option value="10">November</option>
+                            <option value="11">December</option>
+                        </select>
+                    </div>
+
+                    <button id="apply-filter-btn" class="btn-primary"><i class="fa-solid fa-check"></i> Apply</button>
+                </div>
+
+                <div class="summary-cards">
+                    <div class="summary-card glass-card balance-card">
+                        <h3>Total Balance <span class="summary-subtitle" style="font-size: 0.7em; opacity: 0.8;">(This Month)</span></h3>
+                        <h2 id="total-balance">₹0.00</h2>
+                    </div>
+                    <div class="summary-card glass-card income-card">
+                        <h3><i class="fa-solid fa-arrow-trend-up"></i> Income <span class="summary-subtitle" style="font-size: 0.7em; opacity: 0.8;">(This Month)</span></h3>
+                        <h2 id="total-income">₹0.00</h2>
+                    </div>
+                    <div class="summary-card glass-card expense-card">
+                        <h3><i class="fa-solid fa-arrow-trend-down"></i> Expenses <span class="summary-subtitle" style="font-size: 0.7em; opacity: 0.8;">(This Month)</span></h3>
+                        <h2 id="total-expense">₹0.00</h2>
+                    </div>
+                    <div class="summary-card glass-card unpaid-card">
+                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Unpaid <span class="summary-subtitle" style="font-size: 0.7em; opacity: 0.8;">(This Month)</span></h3>
+                        <h2 id="total-unpaid">₹0.00</h2>
+                    </div>
+                </div>
+
+                <div class="chart-container glass-card">
+                    <h3>Expense vs Income Analytics <span class="summary-subtitle" style="font-size: 0.75em; opacity: 0.8; font-weight: normal;">(This Month)</span></h3>
+                    <div class="canvas-wrapper">
+                        <canvas id="financeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-add" class="view-section">
+                <div class="add-transaction glass-card" id="add-transaction-section">
+                    <h3>Add New Transaction</h3>
+                    <form id="transaction-form">
+                        
+                        <input type="hidden" id="edit-trans-id" value="">
+
+                        <div class="input-group">
+                            <input type="text" id="trans-title" list="title-suggestions" placeholder="Transaction Title (e.g., Salary, Rent)" required autocomplete="off">
+                            <datalist id="title-suggestions">
+                            </datalist>
+                        </div>
+                        
+                        <div class="input-group">
+                            <input type="number" id="trans-amount" placeholder="Amount (₹)" min="1" required>
+                        </div>
+
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="trans-type" value="income" required>
+                                <span>Income (+)</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="trans-type" value="expense" required>
+                                <span>Expense (-)</span>
+                            </label>
+                        </div>
+
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="trans-mode" value="cash" required>
+                                <span>Cash</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="trans-mode" value="online" required>
+                                <span>Online</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="trans-mode" value="not-paid" required>
+                                <span>Not Paid</span>
+                            </label>
+                        </div>
+
+                        <button type="submit" id="submit-trans-btn" class="btn-primary w-100">
+                            <i class="fa-solid fa-plus"></i> Add Transaction
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="view-profile" class="view-section">
+                <div class="profile-info glass-card mb-24 profile-header-container">
+                    <div class="profile-details">
+                        <div class="avatar" id="profile-avatar"><i class="fa-solid fa-circle-user"></i></div>
+                        <div class="profile-text">
+                            <h2 id="profile-name">User Name</h2>
+                            <p id="profile-email" style="color: var(--text-muted);">user@example.com</p>
+                        </div>
+                    </div>
+                    <button id="logout-btn" class="btn-danger-outline">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                    </button>
+                </div>
+
+                <div class="transaction-history glass-card">
+                    <div class="history-header">
+                        <h3>Recent Transactions</h3>
+                        <div class="history-actions">
+                            <select id="profile-mode-filter" class="mode-filter">
+                                <option value="all">All Modes</option>
+                                <option value="cash">Cash</option>
+                                <option value="online">Online</option>
+                                <option value="not-paid">Not Paid</option>
+                            </select>
+                            <button id="export-csv" class="icon-btn" title="Export to CSV">
+                                <i class="fa-solid fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="loading-spinner hidden" id="trans-loader"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading...</div>
+                    <ul id="transaction-list" class="transaction-list">
+                    </ul>
+                </div>
+            </div>
+        </main>
+
+        <nav class="mobile-bottom-nav">
+            <a href="#" class="nav-item active" data-target="view-home">
+                <i class="fa-solid fa-house"></i>
+                <span>Home</span>
+            </a>
+            <a href="#" class="nav-item" data-target="view-add">
+                <i class="fa-solid fa-circle-plus"></i>
+                <span>Add</span>
+            </a>
+            <a href="#" class="nav-item" data-target="view-profile">
+                <i class="fa-solid fa-user"></i>
+                <span>Profile</span>
+            </a>
+        </nav>
+
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
