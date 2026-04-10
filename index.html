@@ -31,7 +31,9 @@
                     <i class="fa-solid fa-eye toggle-password" data-target="login-password"></i>
                 </div>
                 <button type="submit" class="btn-primary w-100" id="login-btn">
-                    <i class="fa-solid fa-right-to-bracket"></i> Login
+                    <i class="fa-solid fa-right-to-bracket" id="login-icon"></i>
+                    <i class="fa-solid fa-spinner fa-spin hidden" id="login-loader"></i>
+                    <span id="login-text">Login</span>
                 </button>
             </form>
 
@@ -167,7 +169,7 @@
                         </div>
                     </div>
                     
-                    <div class="chart-container glass-card">
+                    <div class="chart-container glass-card title-chart-container">
                         <h3>Transactions by Title <span class="summary-subtitle" style="font-size: 0.75em; opacity: 0.8; font-weight: normal;">(This Month)</span></h3>
                         <div class="canvas-wrapper">
                             <canvas id="titleBarChart"></canvas>
@@ -279,6 +281,6 @@
 
     </div>
 
-    <script type="module" src="script.js?=v1.0"></script>
+    <script type="module" src="script.js?=v2.0"></script>
 </body>
 </html>
