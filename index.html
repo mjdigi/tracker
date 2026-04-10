@@ -90,7 +90,7 @@
                 <button id="theme-toggle" class="icon-btn" title="Toggle Dark/Light Mode">
                     <i class="fa-solid fa-moon"></i>
                 </button>
-                </div>
+            </div>
         </nav>
 
         <main class="dashboard-main">
@@ -119,7 +119,7 @@
 
                     <div id="filter-year-inputs" class="filter-inputs hidden">
                         <select id="filter-year-val">
-                            </select>
+                        </select>
                         <select id="filter-year-month-optional">
                             <option value="">All Months</option>
                             <option value="0">January</option>
@@ -159,10 +159,19 @@
                     </div>
                 </div>
 
-                <div class="chart-container glass-card">
-                    <h3>Expense vs Income Analytics <span class="summary-subtitle" style="font-size: 0.75em; opacity: 0.8; font-weight: normal;">(This Month)</span></h3>
-                    <div class="canvas-wrapper">
-                        <canvas id="financeChart"></canvas>
+                <div class="charts-grid">
+                    <div class="chart-container glass-card">
+                        <h3>Expense vs Income <span class="summary-subtitle" style="font-size: 0.75em; opacity: 0.8; font-weight: normal;">(This Month)</span></h3>
+                        <div class="canvas-wrapper">
+                            <canvas id="financeChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container glass-card">
+                        <h3>Transactions by Title <span class="summary-subtitle" style="font-size: 0.75em; opacity: 0.8; font-weight: normal;">(This Month)</span></h3>
+                        <div class="canvas-wrapper">
+                            <canvas id="titleBarChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -186,7 +195,7 @@
 
                         <div class="radio-group">
                             <label class="radio-label">
-                                <input type="radio" name="trans-type" value="income" required>
+                                <input type="radio" name="trans-type" value="income" required checked>
                                 <span>Income (+)</span>
                             </label>
                             <label class="radio-label">
@@ -197,7 +206,7 @@
 
                         <div class="radio-group">
                             <label class="radio-label">
-                                <input type="radio" name="trans-mode" value="cash" required>
+                                <input type="radio" name="trans-mode" value="cash" required checked>
                                 <span>Cash</span>
                             </label>
                             <label class="radio-label">
@@ -270,6 +279,6 @@
 
     </div>
 
-    <script type="module" src="script.js"></script>
+    <script type="module" src="script.js?=v1.0"></script>
 </body>
 </html>
