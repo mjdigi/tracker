@@ -7,7 +7,7 @@ import {
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, 
     GoogleAuthProvider, 
-    signInWithPopup, 
+    signInWithRedirect, 
     onAuthStateChanged, 
     signOut,
     updateProfile
@@ -58,6 +58,11 @@ const showRegisterBtn = document.getElementById('show-register');
 const showLoginBtn = document.getElementById('show-login');
 
 const loginForm = document.getElementById('login-form');
+const loginBtn = document.getElementById('login-btn');
+const loginIcon = document.getElementById('login-icon');
+const loginLoader = document.getElementById('login-loader');
+const loginText = document.getElementById('login-text');
+
 const registerForm = document.getElementById('register-form');
 const transactionForm = document.getElementById('transaction-form');
 const titleSuggestionsEl = document.getElementById('title-suggestions');
@@ -215,19 +220,43 @@ loginForm.addEventListener('submit', async (e) => {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
 
+    // Show Loader State
+    loginBtn.disabled = true;
+    loginBtn.style.opacity = '0.8';
+    loginIcon.classList.add('hidden');
+    loginLoader.classList.remove('hidden');
+    loginText.textContent = 'Logging in...';
+
     try {
         await signInWithEmailAndPassword(auth, email, password);
         showToast('Logged in successfully!');
         loginForm.reset();
     } catch (error) {
-        showToast('Invalid credentials. Please try again.', 'error');
+        // Specific Error Mapping
+        let errorMsg = 'Invalid credentials. Please try again.';
+        if (error.code === 'auth/user-not-found') {
+            errorMsg = 'Email ID not found.';
+        } else if (error.code === 'auth/wrong-password') {
+            errorMsg = 'Incorrect Password.';
+        } else if (error.code === 'auth/invalid-credential') {
+            // Firebase updates group not-found & wrong-password into invalid-credential to prevent enumeration
+            errorMsg = 'Email ID not found or Incorrect Password.';
+        }
+        showToast(errorMsg, 'error');
+    } finally {
+        // Reset Loader State
+        loginBtn.disabled = false;
+        loginBtn.style.opacity = '1';
+        loginIcon.classList.remove('hidden');
+        loginLoader.classList.add('hidden');
+        loginText.textContent = 'Login';
     }
 });
 
 document.getElementById('google-login-btn').addEventListener('click', async () => {
     try {
-        await signInWithPopup(auth, googleProvider);
-        showToast('Logged in with Google!');
+        // Changed to signInWithRedirect to support Android Webview environments
+        await signInWithRedirect(auth, googleProvider);
     } catch (error) {
         showToast('Google Sign-In failed.', 'error');
     }
