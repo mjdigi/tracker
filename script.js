@@ -44,7 +44,9 @@ const googleProvider = new GoogleAuthProvider();
 let currentUser = null;
 let dbUnsubscribe = null; 
 let financeChartInstance = null;
+let titleBarChartInstance = null;
 let currentTransactions = [];
+let currentTotalBalance = 0; // Tracks the balance shown on Home
 
 // =========================================================================
 // 2. DOM ELEMENT SELECTION
@@ -133,10 +135,14 @@ const showToast = (message, type = 'success') => {
     const icon = type === 'success' ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>';
     toast.innerHTML = `${icon} <span>${message}</span>`;
     
-    container.appendChild(toast);
+    // Use prepend to show the latest toast on the left in a horizontal layout
+    container.prepend(toast);
+    
+    // Auto-scroll to the start so the user sees the newest toast
+    container.scrollLeft = 0;
     
     setTimeout(() => {
-        toast.style.animation = 'slideUpToast 0.3s ease reverse forwards';
+        toast.style.animation = 'fadeOutToast 0.3s ease forwards';
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 };
@@ -170,7 +176,7 @@ themeToggle.addEventListener('click', () => {
     htmlEl.setAttribute('data-theme', newTheme);
     themeToggle.innerHTML = newTheme === 'light' ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
     
-    if(financeChartInstance) {
+    if(financeChartInstance || titleBarChartInstance) {
         updateDashboardUI(); 
     }
 });
@@ -271,7 +277,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // =========================================================================
-// 5. DATABASE OPERATIONS (CRUD)
+// 5. DATABASE OPERATIONS (CRUD) & VALIDATION
 // =========================================================================
 transactionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -283,6 +289,24 @@ transactionForm.addEventListener('submit', async (e) => {
     const mode = document.querySelector('input[name="trans-mode"]:checked').value;
     
     const editId = document.getElementById('edit-trans-id').value;
+
+    // --- Validation: Cannot exceed total balance unless mode is "Not Paid" ---
+    let availableBalance = currentTotalBalance;
+    if (editId) {
+        const trans = currentTransactions.find(t => t.id === editId);
+        if (trans) {
+            // Restore actual balance as if editing transaction didn't exist yet
+            if (trans.type === 'income') availableBalance -= trans.amount;
+            if (trans.type === 'expense' && trans.mode !== 'not-paid') availableBalance += trans.amount;
+        }
+    }
+
+    if (type === 'expense' && mode !== 'not-paid') {
+        if (amount > availableBalance) {
+            showToast('Expense exceeds Total Balance! Allowed only if mode is "Not Paid".', 'error');
+            return;
+        }
+    }
 
     try {
         if (editId) {
@@ -383,6 +407,7 @@ const updateDashboardUI = () => {
     let totalUnpaid = 0;
     let uniqueTitles = new Set();
     let displayedCount = 0;
+    let titleAggregations = {}; 
 
     // ----- Home View Filter Configuration -----
     const filterType = filterTypeEl.value;
@@ -468,6 +493,12 @@ const updateDashboardUI = () => {
             if (trans.type === 'income') totalIncome += trans.amount;
             if (trans.type === 'expense') totalExpense += trans.amount;
             if (trans.mode === 'not-paid') totalUnpaid += trans.amount;
+
+            if (!titleAggregations[trans.title]) {
+                titleAggregations[trans.title] = { income: 0, expense: 0 };
+            }
+            if (trans.type === 'income') titleAggregations[trans.title].income += trans.amount;
+            if (trans.type === 'expense') titleAggregations[trans.title].expense += trans.amount;
         }
 
         // Add to Add-Transaction autocomplete
@@ -513,6 +544,7 @@ const updateDashboardUI = () => {
     }
 
     const totalBalance = totalIncome - totalExpense;
+    currentTotalBalance = totalBalance; // Store globally for Add form validation
 
     balanceEl.textContent = formatMoney(totalBalance);
     incomeEl.textContent = formatMoney(totalIncome);
@@ -521,18 +553,21 @@ const updateDashboardUI = () => {
 
     balanceEl.style.color = totalBalance < 0 ? 'var(--expense)' : (totalBalance > 0 ? 'var(--income)' : 'inherit');
 
-    renderChart(totalIncome, totalExpense);
+    renderChart(totalIncome, totalExpense, titleAggregations);
 };
 
 // =========================================================================
 // 7. CHART.JS INTEGRATION 
 // =========================================================================
-const renderChart = (income = 0, expense = 0) => {
+const renderChart = (income = 0, expense = 0, titleAggregations = {}) => {
     const ctx = document.getElementById('financeChart').getContext('2d');
+    const barCtx = document.getElementById('titleBarChart').getContext('2d');
     
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const textColor = isDark ? '#f8fafc' : '#1e1b4b';
+    const gridColor = isDark ? '#334155' : '#e2e8f0';
 
+    // ---- Doughnut Chart ----
     if (financeChartInstance) {
         financeChartInstance.destroy();
     }
@@ -566,6 +601,62 @@ const renderChart = (income = 0, expense = 0) => {
                 }
             },
             cutout: '70%'
+        }
+    });
+
+    // ---- Bar Chart ----
+    if (titleBarChartInstance) {
+        titleBarChartInstance.destroy();
+    }
+
+    const titles = Object.keys(titleAggregations);
+    const hasBarData = titles.length > 0;
+    const barLabels = hasBarData ? titles : ['No Data Yet'];
+    
+    const barIncomeData = hasBarData ? titles.map(t => titleAggregations[t].income) : [0];
+    const barExpenseData = hasBarData ? titles.map(t => titleAggregations[t].expense) : [0];
+
+    titleBarChartInstance = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+            labels: barLabels,
+            datasets: [
+                {
+                    label: 'Income',
+                    data: barIncomeData,
+                    backgroundColor: hasBarData ? '#10b981' : (isDark ? '#334155' : '#cbd5e1'),
+                    borderRadius: 4
+                },
+                {
+                    label: 'Expense',
+                    data: barExpenseData,
+                    backgroundColor: hasBarData ? '#ef4444' : (isDark ? '#334155' : '#cbd5e1'),
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: textColor, font: { family: 'Poppins' } }
+                },
+                tooltip: {
+                    enabled: hasBarData
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: textColor, font: { family: 'Poppins' } },
+                    grid: { display: false }
+                },
+                y: {
+                    ticks: { color: textColor, font: { family: 'Poppins' } },
+                    grid: { color: gridColor }
+                }
+            }
         }
     });
 };
@@ -622,8 +713,9 @@ window.switchView = (targetId) => {
         }
     });
 
-    if(targetId === 'view-home' && financeChartInstance) {
-        setTimeout(() => financeChartInstance.resize(), 50);
+    if(targetId === 'view-home') {
+        if (financeChartInstance) setTimeout(() => financeChartInstance.resize(), 50);
+        if (titleBarChartInstance) setTimeout(() => titleBarChartInstance.resize(), 50);
     }
 };
 
@@ -632,6 +724,9 @@ allNavLinks.forEach(link => {
         e.preventDefault(); 
         const target = link.getAttribute('data-target');
         window.switchView(target);
-        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        
+        // Removed `window.scrollTo` as we are now using fixed internal scrolling container for realistic app feel
+        const dashboardMain = document.querySelector('.dashboard-main');
+        if (dashboardMain) dashboardMain.scrollTo({ top: 0, behavior: 'smooth' });
     });
 });
